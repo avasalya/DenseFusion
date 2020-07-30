@@ -31,6 +31,7 @@ class ModifiedResnet(nn.Module):
 
         self.model = psp_models['resnet18'.lower()]()
         self.model = nn.DataParallel(self.model)
+        # self.model = nn.DataParallel(self.model, device_ids=[0,1,2,3]).cuda()
 
     def forward(self, x):
         x = self.model(x)

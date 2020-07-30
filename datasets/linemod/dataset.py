@@ -70,10 +70,22 @@ class PoseDataset(data.Dataset):
 
         self.length = len(self.list_rgb)
 
-        self.cam_cx = 325.26110
-        self.cam_cy = 242.04899
-        self.cam_fx = 572.41140
-        self.cam_fy = 573.57043
+        # self.cam_cx = 325.26110
+        # self.cam_cy = 242.04899
+        # self.cam_fx = 572.41140
+        # self.cam_fy = 573.57043
+
+        # camera aligned_depth_to_color_info
+        self.cam_fx = 605.2861938476562
+        self.cam_cx = 320.0749206542969
+        self.cam_fy = 605.69921875
+        self.cam_cy = 247.87693786621094
+
+        # # camera depth_camera_info
+        # self.cam_fx = 382.42156982421875
+        # self.cam_cx = 322.84039306640625
+        # self.cam_fy = 382.42156982421875
+        # self.cam_cy = 239.3495330810547
 
         self.xmap = np.array([[j for i in range(640)] for j in range(480)])
         self.ymap = np.array([[i for i in range(640)] for j in range(480)])

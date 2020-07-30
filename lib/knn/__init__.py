@@ -1,10 +1,16 @@
+import sys
+sys.path.insert(0, "/home/aist/DenseFusion/lib/knn")
+print("path is ...........",sys.path)
 import unittest
 import gc
 import operator as op
 import functools
 import torch
 from torch.autograd import Variable, Function
-from lib.knn import knn_pytorch as knn_pytorch
+#from lib.knn import knn_pytorch as knn_pytorch
+#from lib.knn.knn_pytorch import knn_pytorch
+import knn_pytorch
+
 
 class KNearestNeighbor(Function):
   """ Compute k nearest neighbors for each query point.
