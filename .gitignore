@@ -1,0 +1,5 @@
+datasets/linemod/*
+datasets/ycb/*
+.vscode/*
+trained_checkpoints.zip
+YCB_Video_Dataset.zip
