@@ -22,15 +22,16 @@ import cv2
 
 
 class PoseDataset(data.Dataset):
+
     def __init__(self, mode, num, add_noise, root, noise_trans, refine):
-        self.objlist = [1]
+        self.objlist = [2]
         self.mode = mode
 
         self.list_rgb = []
         self.list_depth = []
         self.list_label = []
         self.list_obj = []
-        self.list_rank = []
+        self.list_frame = []
         self.meta = {}
         self.pt = {}
         self.root = root
@@ -39,7 +40,6 @@ class PoseDataset(data.Dataset):
 
         item_count = 0
         for item in self.objlist:
-            print("items---------------------", item)
             if self.mode == 'train':
                 input_file = open('{0}/data/{1}/train.txt'.format(self.root, '%02d' % item))
             else:
@@ -47,7 +47,7 @@ class PoseDataset(data.Dataset):
             while 1:
                 item_count += 1
                 input_line = input_file.readline()
-                if self.mode == 'test' and item_count % 10 != 0:
+                if self.mode == 'test' and item_count % 2 != 0:
                     continue
                 if not input_line:
                     break
@@ -61,12 +61,12 @@ class PoseDataset(data.Dataset):
                     self.list_label.append('{0}/data/{1}/mask/{2}.png'.format(self.root, '%02d' % item, input_line))
                 
                 self.list_obj.append(item)
-                self.list_rank.append(int(input_line))
+                self.list_frame.append(int(input_line))
+                
 
             meta_file = open('{0}/data/{1}/gt.yml'.format(self.root, '%02d' % item), 'r')
-            self.meta[item] = yaml.load(meta_file)
+            self.meta[item] = yaml.load(meta_file, Loader=yaml.SafeLoader)
             self.pt[item] = ply_vtx('{0}/models/obj_{1}.ply'.format(self.root, '%02d' % item))
-            
             print("Object {0} buffer loaded".format(item))
 
         self.length = len(self.list_rgb)
@@ -103,30 +103,35 @@ class PoseDataset(data.Dataset):
         self.symmetry_obj_idx = []
 
 
-
+    # index being the index from train.txt or test.txt
     def __getitem__(self, index):
         img = Image.open(self.list_rgb[index])
         ori_img = np.array(img)
         depth = np.array(Image.open(self.list_depth[index]))
         label = np.array(Image.open(self.list_label[index]))
         obj = self.list_obj[index]
-        rank = self.list_rank[index]
-        print("rank.......", rank)
+        frame = self.list_frame[index]
+        # print("index ------", index+1)
+        # print("frame....", frame)
 
-        if obj == 2:
-            for i in range(0, len(self.meta[obj][rank])):
-                if self.meta[obj][rank][i]['obj_id'] == 2:
-                    meta = self.meta[obj][rank][i]
-                    break
-        else:
-            meta = self.meta[obj][rank][0]
+        # if obj == 2:
+        #     for i in range(0, len(self.meta[obj][frame])):
+        #         if self.meta[obj][frame][i]['obj_id'] == 2:
+        #             meta = self.meta[obj][frame][i]
+        #             break
+        # else:
+        #     meta = self.meta[obj][frame][0]
 
+        meta = self.meta[obj][frame][0]
+     
         mask_depth = ma.getmaskarray(ma.masked_not_equal(depth, 0))
+        
         if self.mode == 'eval':
             mask_label = ma.getmaskarray(ma.masked_equal(label, np.array(255)))
         else:
-            mask_label = ma.getmaskarray(ma.masked_equal(label, np.array(255)))
+            mask_label = ma.getmaskarray(ma.masked_equal(label, 0))            
             # mask_label = ma.getmaskarray(ma.masked_equal(label, np.array([255, 255, 255])))[:, :, 0]
+            # print("mask_label.......", mask_label.shape)
         
         mask = mask_label * mask_depth
 
@@ -144,9 +149,14 @@ class PoseDataset(data.Dataset):
 
         img_masked = img_masked[:, rmin:rmax, cmin:cmax]
         
-        # p_img = np.transpose(img_masked, (1, 2, 0))
-        # scipy.misc.imsave('evaluation_result/{0}_input.png'.format(index), p_img)
         
+        
+        """ saving masked bounding bbox cropped images """
+        p_img = np.transpose(img_masked, (1, 2, 0))
+        scipy.misc.imsave('evaluation_result/{0}_input.png'.format(index+1), p_img)
+        
+
+
         target_r = np.resize(np.array(meta['cam_R_m2c']), (3, 3))
         target_t = np.array(meta['cam_t_m2c'])
         add_t = np.array([random.uniform(-self.noise_trans, self.noise_trans) for i in range(3)])

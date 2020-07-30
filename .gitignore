@@ -3,4 +3,6 @@ datasets/ycb/*
 .vscode/*
 trained_checkpoints.zip
 YCB_Video_Dataset.zip
+datasets/txonigiri/data/02.zip
 datasets/txonigiri/__pycache__/dataset.cpython-36.pyc
+evaluation_result/*
