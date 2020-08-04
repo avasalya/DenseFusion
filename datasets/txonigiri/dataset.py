@@ -21,6 +21,15 @@ import yaml
 import cv2
 
 
+def draw(img, imgpts, label):
+
+    color = [[254,100,33],[254,244,0],[171,242,0],[0,216,254],[1,0,254],[95,0,254],[254,0,221],[0,0,0],[153,56,0],[138,36,124],[107,153,0],[5,0,153],[76,76,76],[32,153,67],[41,20,240],[230,111,240],[211,222,6],[40,233,70],[130,24,70],[244,200,210],[70,80,90],[30,40,30]]
+    
+    for point in imgpts:
+        img=cv2.circle(img,(int(point[0][0]),int(point[0][1])), 1, color[int(label)], -1)
+    
+    return img 
+
 class PoseDataset(data.Dataset):
 
     def __init__(self, mode, num, add_noise, root, noise_trans, refine):
@@ -76,12 +85,19 @@ class PoseDataset(data.Dataset):
         # self.cam_fx = 572.41140
         # self.cam_fy = 573.57043
 
-        # camera aligned_depth_to_color_info
+        # # camera aligned_depth_to_color_info
+        # self.cam_fx = 605.2861938476562
+        # self.cam_cx = 320.0749206542969
+        # self.cam_fy = 605.69921875
+        # self.cam_cy = 247.87693786621094
+        
+        # camera _color_info
         self.cam_fx = 605.2861938476562
         self.cam_cx = 320.0749206542969
         self.cam_fy = 605.69921875
         self.cam_cy = 247.87693786621094
         
+
         # # camera depth_camera_info
         # self.cam_fx = 382.42156982421875
         # self.cam_cx = 322.84039306640625
@@ -99,28 +115,21 @@ class PoseDataset(data.Dataset):
         self.border_list = [-1, 40, 80, 120, 160, 200, 240, 280, 320, 360, 400, 440, 480, 520, 560, 600, 640, 680]
         self.num_pt_mesh_large = 9958
         self.num_pt_mesh_small = 9958
-        # self.symmetry_obj_idx = [7, 8]
-        self.symmetry_obj_idx = []
+        self.symmetry_obj_idx = [2]
+
 
 
     # index being the index from train.txt or test.txt
     def __getitem__(self, index):
+
+        scale = 1000.0
+
         img = Image.open(self.list_rgb[index])
         ori_img = np.array(img)
         depth = np.array(Image.open(self.list_depth[index]))
         label = np.array(Image.open(self.list_label[index]))
         obj = self.list_obj[index]
         frame = self.list_frame[index]
-        # print("index ------", index+1)
-        # print("frame....", frame)
-
-        # if obj == 2:
-        #     for i in range(0, len(self.meta[obj][frame])):
-        #         if self.meta[obj][frame][i]['obj_id'] == 2:
-        #             meta = self.meta[obj][frame][i]
-        #             break
-        # else:
-        #     meta = self.meta[obj][frame][0]
 
         meta = self.meta[obj][frame][0]
      
@@ -129,7 +138,7 @@ class PoseDataset(data.Dataset):
         if self.mode == 'eval':
             mask_label = ma.getmaskarray(ma.masked_equal(label, np.array(255)))
         else:
-            mask_label = ma.getmaskarray(ma.masked_equal(label, 0))            
+            mask_label = ma.getmaskarray(ma.masked_equal(label, 0))
             # mask_label = ma.getmaskarray(ma.masked_equal(label, np.array([255, 255, 255])))[:, :, 0]
             # print("mask_label.......", mask_label.shape)
         
@@ -152,9 +161,9 @@ class PoseDataset(data.Dataset):
         
         
         """ saving masked bounding bbox cropped images """
-        p_img = np.transpose(img_masked, (1, 2, 0))
-        scipy.misc.imsave('evaluation_result/{0}_input.png'.format(index+1), p_img)
-        
+        # p_img = np.transpose(img_masked, (1, 2, 0))
+        # scipy.misc.imsave('evaluation_result/{0}_input.png'.format(index), p_img)
+        """  """
 
 
         target_r = np.resize(np.array(meta['cam_R_m2c']), (3, 3))
@@ -184,39 +193,88 @@ class PoseDataset(data.Dataset):
         pt0 = (ymap_masked - self.cam_cx) * pt2 / self.cam_fx
         pt1 = (xmap_masked - self.cam_cy) * pt2 / self.cam_fy
         cloud = np.concatenate((pt0, pt1, pt2), axis=1)
-        cloud = cloud / 1000.0
+
+        # cloud = np.add(cloud, -1.0 * target_t) / scale
+        # cloud = np.add(cloud*1000, target_t / scale)
 
         if self.add_noise:
             cloud = np.add(cloud, add_t)
-
-        #fw = open('evaluation_result/{0}_cld.xyz'.format(index), 'w')
-        #for it in cloud:
-        #    fw.write('{0} {1} {2}\n'.format(it[0], it[1], it[2]))
-        #fw.close()
-
-        model_points = self.pt[obj] / 1000.0
+        
+        
+        model_points = self.pt[obj] / scale
         dellist = [j for j in range(0, len(model_points))]
         # print("model_points", len(model_points))
         dellist = random.sample(dellist, len(model_points) - self.num_pt_mesh_small)
         model_points = np.delete(model_points, dellist, axis=0)
 
-        #fw = open('evaluation_result/{0}_model_points.xyz'.format(index), 'w')
-        #for it in model_points:
-        #    fw.write('{0} {1} {2}\n'.format(it[0], it[1], it[2]))
-        #fw.close()
 
         target = np.dot(model_points, target_r.T)
         if self.add_noise:
-            target = np.add(target, target_t / 1000.0 + add_t)
-            out_t = target_t / 1000.0 + add_t
+            target = np.add(target, target_t / scale + add_t)
+            out_t = target_t / scale + add_t
         else:
-            target = np.add(target, target_t / 1000.0)
-            out_t = target_t / 1000.0
+            target = np.add(target, target_t/ scale)
+            out_t = target_t / scale
 
-        #fw = open('evaluation_result/{0}_tar.xyz'.format(index), 'w')
-        #for it in target:
+
+
+
+        """ for debugging purposes  """
+
+        """  """
+        # fw = open('evaluation_result/{0}_cld.xyz'.format(index), 'w')
+        # for it in cloud:
         #    fw.write('{0} {1} {2}\n'.format(it[0], it[1], it[2]))
-        #fw.close()
+        # fw.close()
+        """  """
+        
+
+        """  """
+        # fw = open('evaluation_result/{0}_model_points.xyz'.format(index), 'w')
+        # for it in model_points:
+        #    fw.write('{0} {1} {2}\n'.format(it[0], it[1], it[2]))
+        # fw.close()
+        """  """
+
+
+        """  """
+        # fw = open('evaluation_result/{0}_tar.xyz'.format(index), 'w')
+        # for it in target:
+        #    fw.write('{0} {1} {2}\n'.format(it[0], it[1], it[2]))
+        # fw.close()
+        """  """
+
+
+        """  """
+        # dist = np.array([0.0, 0.0, 0.0, 0.0, 0.0])
+        # cam_mat = np.matrix([
+        #                     [self.cam_fx, 0, self.cam_cx],
+        #                     [0, self.cam_fy, self.cam_cy],
+        #                     [0, 0, 1]])
+        
+        # cv2_img = Image.open(self.list_rgb[index])
+        # imgt = cv2_img.copy()
+        # # scipy.misc.imsave('evaluation_result/{0}_rgb.png'.format(index), cv2_img)
+
+        
+        # # cloud
+        # # imgpts_cloud, jac = cv2.projectPoints(cloud, target_r, target_t, cam_mat, dist)
+        # imgpts_cloud, jac = cv2.projectPoints(cloud, np.eye(3), np.zeros(shape=target_t.shape), cam_mat, dist)
+        # cv2_img = cv2.polylines(np.array(cv2_img), np.int32([np.squeeze(imgpts_cloud)]), True, (125, 125, 255))
+        # image_cloud = draw(cv2_img, imgpts_cloud, 2)
+        # scipy.misc.imsave('evaluation_result/{0}_imgpts_cloud.png'.format(index), image_cloud)
+        
+        # # model (read directly in from .xyz file)
+        # imgpts_model, jac = cv2.projectPoints(model_points, target_r, target_t, cam_mat, dist)
+        # image_model = draw(cv2_img, imgpts_model, 2)        
+        # scipy.misc.imsave('evaluation_result/{0}_imgpts_model.png'.format(index), image_model)
+
+        # # target
+        # imgpts_target, jac = cv2.projectPoints(target, np.eye(3), np.zeros(shape=target_t.shape), cam_mat, dist) 
+        # imgt = cv2.polylines(np.array(imgt), np.int32([np.squeeze(imgpts_target)]), True, (0, 0, 255))
+        # image_target = draw(imgt, imgpts_target, 2)
+        # scipy.misc.imsave('evaluation_result/{0}_target.png'.format(index), image_target)
+        
 
         return torch.from_numpy(cloud.astype(np.float32)), \
                torch.LongTensor(choose.astype(np.int32)), \
@@ -224,6 +282,9 @@ class PoseDataset(data.Dataset):
                torch.from_numpy(target.astype(np.float32)), \
                torch.from_numpy(model_points.astype(np.float32)), \
                torch.LongTensor([self.objlist.index(obj)])
+
+
+
 
     def __len__(self):
         return self.length

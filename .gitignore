@@ -1,8 +1,14 @@
 datasets/linemod/*
 datasets/ycb/*
-.vscode/*
+evaluation_result/*
+trained_models/txonigiri/*
+trained_checkpoints/*
+
+datasets/txonigiri/__pycache__/*
+vanilla_segmentation/__pycache__/*
+
 trained_checkpoints.zip
 YCB_Video_Dataset.zip
 datasets/txonigiri/data/02.zip
-datasets/txonigiri/__pycache__/dataset.cpython-36.pyc
-evaluation_result/*
+
+.vscode/*
