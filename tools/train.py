@@ -37,8 +37,8 @@ parser.add_argument('--lr', default=0.0001, help='learning rate')
 parser.add_argument('--lr_rate', default=0.3, help='learning rate decay rate')
 parser.add_argument('--w', default=0.015, help='learning rate')
 parser.add_argument('--w_rate', default=0.3, help='learning rate decay rate')
-parser.add_argument('--decay_margin', default=0.022, help='margin to decay lr & w')
-parser.add_argument('--refine_margin', default=0.02, help='margin to start the training of iterative refinement')
+parser.add_argument('--decay_margin', default=0.045, help='margin to decay lr & w')
+parser.add_argument('--refine_margin', default=0.05, help='margin to start the training of iterative refinement')
 parser.add_argument('--noise_trans', default=0.03, help='range of the random noise of translation added to the training data')
 parser.add_argument('--iteration', type=int, default = 2, help='number of refinement iterations')
 parser.add_argument('--nepoch', type=int, default=300, help='max number of epochs to train')
@@ -71,11 +71,11 @@ def main():
         opt.num_points = 1000
         opt.repeat_epoch = 20
 
-        # opt.outf = 'trained_models/txonigiri'
-        # opt.log_dir = 'experiments/logs/txonigiri'
+        opt.outf = 'trained_models/txonigiri'
+        opt.log_dir = 'experiments/logs/txonigiri'
 
-        opt.outf = 'trained_models/txonigiri2'
-        opt.log_dir = 'experiments/logs/txonigiri2'
+        # opt.outf = 'trained_models/txonigiri2'
+        # opt.log_dir = 'experiments/logs/txonigiri2'
 
     else:
         print('Unknown dataset')
