@@ -113,8 +113,9 @@ class PoseDataset(data.Dataset):
         self.trancolor = transforms.ColorJitter(0.2, 0.2, 0.2, 0.05)
         self.norm = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         self.border_list = [-1, 40, 80, 120, 160, 200, 240, 280, 320, 360, 400, 440, 480, 520, 560, 600, 640, 680]
-        self.num_pt_mesh_large = 9958
-        self.num_pt_mesh_small = 9958
+        self.num_pt_mesh_large = 1000
+        self.num_pt_mesh_small = 1000
+        # self.symmetry_obj_idx = []
         self.symmetry_obj_idx = [2]
 
 
@@ -138,10 +139,10 @@ class PoseDataset(data.Dataset):
         if self.mode == 'eval':
             mask_label = ma.getmaskarray(ma.masked_equal(label, np.array(255)))
         else:
-            mask_label = ma.getmaskarray(ma.masked_equal(label, 0))
-            # mask_label = ma.getmaskarray(ma.masked_equal(label, np.array([255, 255, 255])))[:, :, 0]
-            # print("mask_label.......", mask_label.shape)
-        
+            mask_label = ma.getmaskarray(ma.masked_equal(label, 0)) # good starting <0.05
+            # mask_label = ma.getmaskarray(ma.masked_equal(label, np.array(255)))
+            # mask_label = ma.getmaskarray(ma.masked_equal(label, np.array([255, 255, 255])))[:,:,0]
+
         mask = mask_label * mask_depth
 
         if self.add_noise:
@@ -157,8 +158,6 @@ class PoseDataset(data.Dataset):
             rmin, rmax, cmin, cmax = get_bbox(meta['obj_bb'])
 
         img_masked = img_masked[:, rmin:rmax, cmin:cmax]
-        
-        
         
         """ saving masked bounding bbox cropped images """
         # p_img = np.transpose(img_masked, (1, 2, 0))
@@ -194,8 +193,8 @@ class PoseDataset(data.Dataset):
         pt1 = (xmap_masked - self.cam_cy) * pt2 / self.cam_fy
         cloud = np.concatenate((pt0, pt1, pt2), axis=1)
 
-        # cloud = np.add(cloud, -1.0 * target_t) / scale
-        # cloud = np.add(cloud*1000, target_t / scale)
+        # need scaling 
+        cloud = cloud /scale 
 
         if self.add_noise:
             cloud = np.add(cloud, add_t)
@@ -203,7 +202,6 @@ class PoseDataset(data.Dataset):
         
         model_points = self.pt[obj] / scale
         dellist = [j for j in range(0, len(model_points))]
-        # print("model_points", len(model_points))
         dellist = random.sample(dellist, len(model_points) - self.num_pt_mesh_small)
         model_points = np.delete(model_points, dellist, axis=0)
 
@@ -221,59 +219,57 @@ class PoseDataset(data.Dataset):
 
         """ for debugging purposes  """
 
-        """  """
         # fw = open('evaluation_result/{0}_cld.xyz'.format(index), 'w')
         # for it in cloud:
         #    fw.write('{0} {1} {2}\n'.format(it[0], it[1], it[2]))
         # fw.close()
-        """  """
         
 
-        """  """
-        # fw = open('evaluation_result/{0}_model_points.xyz'.format(index), 'w')
+        # fw = open('evaluation_result/{0}_model.xyz'.format(index), 'w')
         # for it in model_points:
         #    fw.write('{0} {1} {2}\n'.format(it[0], it[1], it[2]))
         # fw.close()
-        """  """
 
 
-        """  """
         # fw = open('evaluation_result/{0}_tar.xyz'.format(index), 'w')
         # for it in target:
         #    fw.write('{0} {1} {2}\n'.format(it[0], it[1], it[2]))
         # fw.close()
-        """  """
 
 
-        """  """
+
         # dist = np.array([0.0, 0.0, 0.0, 0.0, 0.0])
         # cam_mat = np.matrix([
         #                     [self.cam_fx, 0, self.cam_cx],
         #                     [0, self.cam_fy, self.cam_cy],
         #                     [0, 0, 1]])
         
-        # cv2_img = Image.open(self.list_rgb[index])
-        # imgt = cv2_img.copy()
-        # # scipy.misc.imsave('evaluation_result/{0}_rgb.png'.format(index), cv2_img)
+        # img = Image.open(self.list_rgb[index])
+        # imgc = img.copy()
+        # imgt = img.copy()
+        # imgm = img.copy()
+        # # scipy.misc.imsave('evaluation_result/{0}_rgb.png'.format(index), img)
 
-        
         # # cloud
         # # imgpts_cloud, jac = cv2.projectPoints(cloud, target_r, target_t, cam_mat, dist)
         # imgpts_cloud, jac = cv2.projectPoints(cloud, np.eye(3), np.zeros(shape=target_t.shape), cam_mat, dist)
-        # cv2_img = cv2.polylines(np.array(cv2_img), np.int32([np.squeeze(imgpts_cloud)]), True, (125, 125, 255))
-        # image_cloud = draw(cv2_img, imgpts_cloud, 2)
+        # imgc = cv2.polylines(np.array(imgc), np.int32([np.squeeze(imgpts_cloud)]), True, (125, 125, 255))
+        # image_cloud = draw(imgc, imgpts_cloud, 2)
         # scipy.misc.imsave('evaluation_result/{0}_imgpts_cloud.png'.format(index), image_cloud)
         
-        # # model (read directly in from .xyz file)
-        # imgpts_model, jac = cv2.projectPoints(model_points, target_r, target_t, cam_mat, dist)
-        # image_model = draw(cv2_img, imgpts_model, 2)        
-        # scipy.misc.imsave('evaluation_result/{0}_imgpts_model.png'.format(index), image_model)
+        # # # model (read directly in from .xyz file)
+        # # imgpts_model, jac = cv2.projectPoints(model_points, target_r, target_t, cam_mat, dist)
+        # # imgm = cv2.polylines(np.array(imgm), np.int32([np.squeeze(imgpts_model)]), True, (0, 0, 255))
+        # # image_model = draw(imgm, imgpts_model, 2)        
+        # # scipy.misc.imsave('evaluation_result/{0}_imgpts_model.png'.format(index), image_model)
 
         # # target
         # imgpts_target, jac = cv2.projectPoints(target, np.eye(3), np.zeros(shape=target_t.shape), cam_mat, dist) 
         # imgt = cv2.polylines(np.array(imgt), np.int32([np.squeeze(imgpts_target)]), True, (0, 0, 255))
         # image_target = draw(imgt, imgpts_target, 2)
         # scipy.misc.imsave('evaluation_result/{0}_target.png'.format(index), image_target)
+
+
         
 
         return torch.from_numpy(cloud.astype(np.float32)), \

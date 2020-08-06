@@ -10,5 +10,8 @@ vanilla_segmentation/__pycache__/*
 trained_checkpoints.zip
 YCB_Video_Dataset.zip
 datasets/txonigiri/data/02.zip
+experiments/logs/linemod
+experiments/logs/txonigiri
+experiments/logs/txonigiri2
 
 .vscode/*
