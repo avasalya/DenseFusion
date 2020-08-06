@@ -1,7 +1,8 @@
 datasets/linemod/*
 datasets/ycb/*
 evaluation_result/*
-trained_models/txonigiri/*
+trained_models/txonigiri/
+trained_models/txonigiri2/
 trained_checkpoints/*
 
 datasets/txonigiri/__pycache__/*
