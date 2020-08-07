@@ -37,11 +37,11 @@ parser.add_argument('--lr', default=0.0001, help='learning rate')
 parser.add_argument('--lr_rate', default=0.3, help='learning rate decay rate')
 parser.add_argument('--w', default=0.015, help='learning rate')
 parser.add_argument('--w_rate', default=0.3, help='learning rate decay rate')
-parser.add_argument('--decay_margin', default=0.045, help='margin to decay lr & w')
-parser.add_argument('--refine_margin', default=0.05, help='margin to start the training of iterative refinement')
+parser.add_argument('--decay_margin', default=0.044, help='margin to decay lr & w')
+parser.add_argument('--refine_margin', default=0.04, help='margin to start the training of iterative refinement')
 parser.add_argument('--noise_trans', default=0.03, help='range of the random noise of translation added to the training data')
 parser.add_argument('--iteration', type=int, default = 2, help='number of refinement iterations')
-parser.add_argument('--nepoch', type=int, default=300, help='max number of epochs to train')
+parser.add_argument('--nepoch', type=int, default=500, help='max number of epochs to train')
 parser.add_argument('--resume_posenet', type=str, default = '',  help='resume PoseNet model')
 parser.add_argument('--resume_refinenet', type=str, default = '',  help='resume PoseRefineNet model')
 parser.add_argument('--start_epoch', type=int, default = 1, help='which epoch to start')
@@ -69,13 +69,24 @@ def main():
     elif opt.dataset == 'txonigiri':
         opt.num_objects = 1
         opt.num_points = 1000
-        opt.repeat_epoch = 20
+        opt.repeat_epoch = 1
 
-        opt.outf = 'trained_models/txonigiri'
-        opt.log_dir = 'experiments/logs/txonigiri'
+        """ # decay margin O.O45// refine margin O.O5// epoch1// no-prev wt """ 
+        # opt.outf = 'trained_models/txonigiri'
+        # opt.log_dir = 'experiments/logs/txonigiri'
 
+        """ # decay margin O.O22, refine margin O.O2// epoch 1// prev 178_0.0376 wt """
         # opt.outf = 'trained_models/txonigiri2'
         # opt.log_dir = 'experiments/logs/txonigiri2'
+
+        """ # decay margin O.O44// refine margin O.O4// epoch1// no-prev wt """ 
+        opt.outf = 'trained_models/txonigiri3'
+        opt.log_dir = 'experiments/logs/txonigiri3'
+
+        """ # decay margin O.O22, refine margin O.O2// epoch 1// no-prev wt """
+        # opt.outf = 'trained_models/txonigiri4'
+        # opt.log_dir = 'experiments/logs/txonigiri4'
+
 
     else:
         print('Unknown dataset')

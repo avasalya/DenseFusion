@@ -33,7 +33,8 @@ def draw(img, imgpts, label):
 class PoseDataset(data.Dataset):
 
     def __init__(self, mode, num, add_noise, root, noise_trans, refine):
-        self.objlist = [2]
+        onigiriObj = 1
+        self.objlist = [onigiriObj]
         self.mode = mode
 
         self.list_rgb = []
@@ -56,7 +57,7 @@ class PoseDataset(data.Dataset):
             while 1:
                 item_count += 1
                 input_line = input_file.readline()
-                if self.mode == 'test' and item_count % 2 != 0:
+                if self.mode == 'test' and item_count % 1 != 0:
                     continue
                 if not input_line:
                     break
@@ -80,30 +81,11 @@ class PoseDataset(data.Dataset):
 
         self.length = len(self.list_rgb)
 
-        # self.cam_cx = 325.26110
-        # self.cam_cy = 242.04899
-        # self.cam_fx = 572.41140
-        # self.cam_fy = 573.57043
-
-        # # camera aligned_depth_to_color_info
-        # self.cam_fx = 605.2861938476562
-        # self.cam_cx = 320.0749206542969
-        # self.cam_fy = 605.69921875
-        # self.cam_cy = 247.87693786621094
-        
         # camera _color_info
         self.cam_fx = 605.2861938476562
         self.cam_cx = 320.0749206542969
         self.cam_fy = 605.69921875
         self.cam_cy = 247.87693786621094
-        
-
-        # # camera depth_camera_info
-        # self.cam_fx = 382.42156982421875
-        # self.cam_cx = 322.84039306640625
-        # self.cam_fy = 382.42156982421875
-        # self.cam_cy = 239.3495330810547
-
 
         self.xmap = np.array([[j for i in range(640)] for j in range(480)])
         self.ymap = np.array([[i for i in range(640)] for j in range(480)])
@@ -115,8 +97,7 @@ class PoseDataset(data.Dataset):
         self.border_list = [-1, 40, 80, 120, 160, 200, 240, 280, 320, 360, 400, 440, 480, 520, 560, 600, 640, 680]
         self.num_pt_mesh_large = 1000
         self.num_pt_mesh_small = 1000
-        # self.symmetry_obj_idx = []
-        self.symmetry_obj_idx = [2]
+        self.symmetry_obj_idx = [onigiriObj]
 
 
 
@@ -139,8 +120,7 @@ class PoseDataset(data.Dataset):
         if self.mode == 'eval':
             mask_label = ma.getmaskarray(ma.masked_equal(label, np.array(255)))
         else:
-            mask_label = ma.getmaskarray(ma.masked_equal(label, 0)) # good starting <0.05
-            # mask_label = ma.getmaskarray(ma.masked_equal(label, np.array(255)))
+            mask_label = ma.getmaskarray(ma.masked_equal(label, np.array(255)))
             # mask_label = ma.getmaskarray(ma.masked_equal(label, np.array([255, 255, 255])))[:,:,0]
 
         mask = mask_label * mask_depth
@@ -158,12 +138,6 @@ class PoseDataset(data.Dataset):
             rmin, rmax, cmin, cmax = get_bbox(meta['obj_bb'])
 
         img_masked = img_masked[:, rmin:rmax, cmin:cmax]
-        
-        """ saving masked bounding bbox cropped images """
-        # p_img = np.transpose(img_masked, (1, 2, 0))
-        # scipy.misc.imsave('evaluation_result/{0}_input.png'.format(index), p_img)
-        """  """
-
 
         target_r = np.resize(np.array(meta['cam_R_m2c']), (3, 3))
         target_t = np.array(meta['cam_t_m2c'])
@@ -192,10 +166,7 @@ class PoseDataset(data.Dataset):
         pt0 = (ymap_masked - self.cam_cx) * pt2 / self.cam_fx
         pt1 = (xmap_masked - self.cam_cy) * pt2 / self.cam_fy
         cloud = np.concatenate((pt0, pt1, pt2), axis=1)
-
-        # need scaling 
-        cloud = cloud /scale 
-
+        cloud = cloud /scale
         if self.add_noise:
             cloud = np.add(cloud, add_t)
         
@@ -218,6 +189,11 @@ class PoseDataset(data.Dataset):
 
 
         """ for debugging purposes  """
+
+        ## saving masked bounding bbox cropped images
+        # p_img = np.transpose(img_masked, (1, 2, 0))
+        # scipy.misc.imsave('evaluation_result/{0}_input.png'.format(index), p_img)
+
 
         # fw = open('evaluation_result/{0}_cld.xyz'.format(index), 'w')
         # for it in cloud:
@@ -254,20 +230,23 @@ class PoseDataset(data.Dataset):
         # # imgpts_cloud, jac = cv2.projectPoints(cloud, target_r, target_t, cam_mat, dist)
         # imgpts_cloud, jac = cv2.projectPoints(cloud, np.eye(3), np.zeros(shape=target_t.shape), cam_mat, dist)
         # imgc = cv2.polylines(np.array(imgc), np.int32([np.squeeze(imgpts_cloud)]), True, (125, 125, 255))
-        # image_cloud = draw(imgc, imgpts_cloud, 2)
-        # scipy.misc.imsave('evaluation_result/{0}_imgpts_cloud.png'.format(index), image_cloud)
+        # scipy.misc.imsave('evaluation_result/{0}_imgpts_cloud2.png'.format(index), imgc)
+        # # image_cloud = draw(imgc, imgpts_cloud, 2)
+        # # scipy.misc.imsave('evaluation_result/{0}_imgpts_cloud.png'.format(index), image_cloud)
         
-        # # # model (read directly in from .xyz file)
-        # # imgpts_model, jac = cv2.projectPoints(model_points, target_r, target_t, cam_mat, dist)
-        # # imgm = cv2.polylines(np.array(imgm), np.int32([np.squeeze(imgpts_model)]), True, (0, 0, 255))
-        # # image_model = draw(imgm, imgpts_model, 2)        
+        # # model (read directly in from .xyz file)
+        # imgpts_model, jac = cv2.projectPoints(model_points, target_r, target_t, cam_mat, dist)
+        # imgm = cv2.polylines(np.array(imgm), np.int32([np.squeeze(imgpts_model)]), True, (0, 124, 255))
+        # scipy.misc.imsave('evaluation_result/{0}_imgpts_model2.png'.format(index), imgm)
+        # # image_model = draw(imgm, imgpts_model, 2)
         # # scipy.misc.imsave('evaluation_result/{0}_imgpts_model.png'.format(index), image_model)
 
         # # target
         # imgpts_target, jac = cv2.projectPoints(target, np.eye(3), np.zeros(shape=target_t.shape), cam_mat, dist) 
-        # imgt = cv2.polylines(np.array(imgt), np.int32([np.squeeze(imgpts_target)]), True, (0, 0, 255))
-        # image_target = draw(imgt, imgpts_target, 2)
-        # scipy.misc.imsave('evaluation_result/{0}_target.png'.format(index), image_target)
+        # imgt = cv2.polylines(np.array(imgt), np.int32([np.squeeze(imgpts_target)]), True, (0, 124, 255))
+        # scipy.misc.imsave('evaluation_result/{0}_imgpts_target2.png'.format(index), imgt)
+        # # image_target = draw(imgt, imgpts_target, 2)
+        # # scipy.misc.imsave('evaluation_result/{0}_imgpts_target.png'.format(index), image_target)
 
 
         
@@ -375,3 +354,22 @@ def ply_vtx(path):
     for _ in range(N):
         pts.append(np.float32(f.readline().split()[:3]))
     return np.array(pts)
+
+
+# self.cam_cx = 325.26110
+# self.cam_cy = 242.04899
+# self.cam_fx = 572.41140
+# self.cam_fy = 573.57043
+
+# # camera aligned_depth_to_color_info
+# self.cam_fx = 605.2861938476562
+# self.cam_cx = 320.0749206542969
+# self.cam_fy = 605.69921875
+# self.cam_cy = 247.87693786621094
+
+
+# # camera depth_camera_info
+# self.cam_fx = 382.42156982421875
+# self.cam_cx = 322.84039306640625
+# self.cam_fy = 382.42156982421875
+# self.cam_cy = 239.3495330810547
