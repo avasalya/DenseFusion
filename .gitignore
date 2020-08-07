@@ -1,27 +1,40 @@
 datasets/linemod/*
+datasets/linemod/Linemod_preprocessed
+YCB_Video_toolbox
+datasets/ycb/YCB_Video_Dataset
 datasets/ycb/*
 datasets/txonigiri/*
-datasets/txonigiri/__pycache__/*
-vanilla_segmentation/__pycache__/*
+
+*.pyc
+__init__.*
+*__pycache__
+# datasets/txonigiri/__pycache__/*
+# vanilla_segmentation/__pycache__/*
+lib/knn/knn_pytorch/__pycache__/*
 
 trained_checkpoints/*
 evaluation_result/*
 
 experiments/logs/*
-# experiments/logs/linemod
-# experiments/logs/txonigiri/
-# experiments/logs/txonigiri2/
+experiments/logs/linemod
+experiments/logs/txonigiri/
+experiments/logs/txonigiri2/*
+experiments/logs/txonigiri3/
+experiments/logs/txonigiri4/
 
-trained_models/*
-# trained_models/txonigiri/
-# trained_models/txonigiri/pose_model_current.pth
-# trained_models/txonigiri2/
-# trained_models/txonigiri2/pose_model_current.pth
+*.pth
+# trained_models/*
+trained_models/txonigiri/
+trained_models/txonigiri/
+trained_models/txonigiri3/
+trained_models/txonigiri4/
  
 
-trained_checkpoints.zip
-YCB_Video_Dataset.zip
-datasets/txonigiri/data/02.zip
+*.zip
+# trained_checkpoints.zip
+# YCB_Video_Dataset.zip
+# datasets/txonigiri/data/02.zip
 
 
 .vscode/*
+
