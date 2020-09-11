@@ -20,8 +20,6 @@ import torchvision.datasets as dset
 import torchvision.transforms as transforms
 import torchvision.utils as vutils
 from torch.autograd import Variable
-from datasets.ycb.dataset import PoseDataset as PoseDataset_ycb
-from datasets.linemod.dataset import PoseDataset as PoseDataset_linemod
 from datasets.txonigiri.dataset import PoseDataset as PoseDataset_txonigiri
 from lib.network import PoseNet, PoseRefineNet
 from lib.loss import Loss
@@ -29,65 +27,39 @@ from lib.loss_refiner import Loss_refine
 from lib.utils import setup_logger
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataset', type=str, default = 'txonigiri', help='txonigiri or ycb or linemod')
-parser.add_argument('--dataset_root', type=str, default = '', help='dataset root dir (''txonigiri'' or ''YCB_Video_Dataset'' or ''Linemod_preprocessed'')')
+parser.add_argument('--dataset', type=str, default = 'txonigiri', help='txonigiri  or linemod')
+parser.add_argument('--dataset_root', type=str, default = '', help='dataset root dir (''txonigiri'' or ''Linemod_preprocessed'')')
 parser.add_argument('--batch_size', type=int, default = 8, help='batch size')
 parser.add_argument('--workers', type=int, default = 10, help='number of data loading workers')
-parser.add_argument('--lr', default=0.0001, help='learning rate')
+parser.add_argument('--lr', default=0.00001, help='learning rate')
 parser.add_argument('--lr_rate', default=0.3, help='learning rate decay rate')
-parser.add_argument('--w', default=0.015, help='learning rate')
+parser.add_argument('--w', default=0.01, help='learning rate')
 parser.add_argument('--w_rate', default=0.3, help='learning rate decay rate')
-parser.add_argument('--decay_margin', default=0.044, help='margin to decay lr & w')
-parser.add_argument('--refine_margin', default=0.04, help='margin to start the training of iterative refinement')
+parser.add_argument('--decay_margin', default=0.015, help='margin to decay lr & w')
+parser.add_argument('--refine_margin', default=0.005, help='margin to start the training of iterative refinement')
 parser.add_argument('--noise_trans', default=0.03, help='range of the random noise of translation added to the training data')
-parser.add_argument('--iteration', type=int, default = 2, help='number of refinement iterations')
+parser.add_argument('--iteration', type=int, default = 6, help='number of refinement iterations')
 parser.add_argument('--nepoch', type=int, default=500, help='max number of epochs to train')
 parser.add_argument('--resume_posenet', type=str, default = '',  help='resume PoseNet model')
 parser.add_argument('--resume_refinenet', type=str, default = '',  help='resume PoseRefineNet model')
 parser.add_argument('--start_epoch', type=int, default = 1, help='which epoch to start')
 opt = parser.parse_args()
 
+# specify which gpu to use
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]="0" # "0,1,2,3"
 
 def main():
     opt.manualSeed = random.randint(1, 10000)
     random.seed(opt.manualSeed)
     torch.manual_seed(opt.manualSeed)
 
-    if opt.dataset == 'ycb':
-        opt.num_objects = 21 #number of object classes in the dataset
-        opt.num_points = 1000 #number of points on the input pointcloud
-        opt.outf = 'trained_models/ycb' #folder to save trained models
-        opt.log_dir = 'experiments/logs/ycb' #folder to save logs
-        opt.repeat_epoch = 1 #number of repeat times for one epoch training
-    elif opt.dataset == 'linemod':
-        # opt.num_objects = 13
+    if opt.dataset == 'txonigiri':
         opt.num_objects = 1
         opt.num_points = 500
-        opt.outf = 'trained_models/linemod'
-        opt.log_dir = 'experiments/logs/linemod'
-        opt.repeat_epoch = 20
-    elif opt.dataset == 'txonigiri':
-        opt.num_objects = 1
-        opt.num_points = 1000
         opt.repeat_epoch = 1
-
-        """ # decay margin O.O45// refine margin O.O5// epoch1// no-prev wt """ 
-        # opt.outf = 'trained_models/txonigiri'
-        # opt.log_dir = 'experiments/logs/txonigiri'
-
-        """ # decay margin O.O22, refine margin O.O2// epoch 1// prev 178_0.0376 wt """
-        # opt.outf = 'trained_models/txonigiri2'
-        # opt.log_dir = 'experiments/logs/txonigiri2'
-
-        """ # decay margin O.O44// refine margin O.O4// epoch1// no-prev wt """ 
-        opt.outf = 'trained_models/txonigiri3'
-        opt.log_dir = 'experiments/logs/txonigiri3'
-
-        """ # decay margin O.O22, refine margin O.O2// epoch 1// no-prev wt """
-        # opt.outf = 'trained_models/txonigiri4'
-        # opt.log_dir = 'experiments/logs/txonigiri4'
-
-
+        opt.outf = 'trained_models/txonigiri'
+        opt.log_dir = 'experiments/logs/txonigiri'
     else:
         print('Unknown dataset')
         return
@@ -99,6 +71,7 @@ def main():
 
     if opt.resume_posenet != '':
         estimator.load_state_dict(torch.load('{0}/{1}'.format(opt.outf, opt.resume_posenet)))
+        print("---------------old pose wt loaded---------------")
 
     if opt.resume_refinenet != '':
         refiner.load_state_dict(torch.load('{0}/{1}'.format(opt.outf, opt.resume_refinenet)))
@@ -113,24 +86,15 @@ def main():
         opt.decay_start = False
         optimizer = optim.Adam(estimator.parameters(), lr=opt.lr)
 
-    if opt.dataset == 'ycb':
-        dataset = PoseDataset_ycb('train', opt.num_points, True, opt.dataset_root, opt.noise_trans, opt.refine_start)
-    elif opt.dataset == 'linemod':
-        dataset = PoseDataset_linemod('train', opt.num_points, True, opt.dataset_root, opt.noise_trans, opt.refine_start)
-    elif opt.dataset == 'txonigiri':
-        dataset = PoseDataset_txonigiri('train', opt.num_points, True, opt.dataset_root, opt.noise_trans, opt.refine_start)
 
+    if opt.dataset == 'txonigiri':
+        dataset = PoseDataset_txonigiri('train', opt.num_points, True, opt.dataset_root, opt.noise_trans, opt.refine_start)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=opt.workers)
 
-    if opt.dataset == 'ycb':
-        test_dataset = PoseDataset_ycb('test', opt.num_points, False, opt.dataset_root, 0.0, opt.refine_start)
-    elif opt.dataset == 'linemod':
-        test_dataset = PoseDataset_linemod('test', opt.num_points, False, opt.dataset_root, 0.0, opt.refine_start)
-    elif opt.dataset == 'txonigiri':
+    if opt.dataset == 'txonigiri':
         test_dataset = PoseDataset_txonigiri('test', opt.num_points, False, opt.dataset_root, 0.0, opt.refine_start)
-    
     testdataloader = torch.utils.data.DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=opt.workers)
-    
+
     opt.sym_list = dataset.get_sym_list()
     opt.num_points_mesh = dataset.get_num_points_mesh()
 
@@ -161,17 +125,21 @@ def main():
         for rep in range(opt.repeat_epoch):
             for i, data in enumerate(dataloader, 0):
                 points, choose, img, target, model_points, idx = data
-                # print("img size-----", img.shape)
+                #NOTE: keep dataloader shuffle OFF
+                if points.shape[0] is 1 and points.shape[1] is 1:
+                    print("something wrong in file at the index of train.txt", i+1, img.size())
+                    continue
+
                 points, choose, img, target, model_points, idx = Variable(points).cuda(), \
-                                                                 Variable(choose).cuda(), \
-                                                                 Variable(img).cuda(), \
-                                                                 Variable(target).cuda(), \
-                                                                 Variable(model_points).cuda(), \
-                                                                 Variable(idx).cuda()
-                # print("torch img size ---", img.shape)
+                                                                Variable(choose).cuda(), \
+                                                                Variable(img).cuda(), \
+                                                                Variable(target).cuda(), \
+                                                                Variable(model_points).cuda(), \
+                                                                Variable(idx).cuda()
+
                 pred_r, pred_t, pred_c, emb = estimator(img, points, choose, idx)
                 loss, dis, new_points, new_target = criterion(pred_r, pred_t, pred_c, target, model_points, idx, points, opt.w, opt.refine_start)
-                
+
                 if opt.refine_start:
                     for ite in range(0, opt.iteration):
                         pred_r, pred_t = refiner(new_points, emb, idx)
@@ -182,12 +150,8 @@ def main():
 
                 train_dis_avg += dis.item()
                 train_count += 1
-                
-                # print("train count ---", train_count)
-                # print("-----------------OK ---------------------------")
-                
-                if train_count % opt.batch_size == 0:
 
+                if train_count % opt.batch_size == 0:
                     logger.info('Train time {0} Epoch {1} Batch {2} Frame {3} Avg_dis:{4}'.format(time.strftime("%Hh %Mm %Ss", time.gmtime(time.time() - st_time)), epoch, int(train_count / opt.batch_size), train_count, train_dis_avg / opt.batch_size))
                     optimizer.step()
                     optimizer.zero_grad()
@@ -211,12 +175,17 @@ def main():
 
         for j, data in enumerate(testdataloader, 0):
             points, choose, img, target, model_points, idx = data
+            #NOTE: keep dataloader shuffle OFF
+            if points.shape[0] is 1 and points.shape[1] is 1:
+                print("something wrong in file at the index of train.txt", j+1, img.size())
+                continue
+
             points, choose, img, target, model_points, idx = Variable(points).cuda(), \
-                                                             Variable(choose).cuda(), \
-                                                             Variable(img).cuda(), \
-                                                             Variable(target).cuda(), \
-                                                             Variable(model_points).cuda(), \
-                                                             Variable(idx).cuda()
+                                                            Variable(choose).cuda(), \
+                                                            Variable(img).cuda(), \
+                                                            Variable(target).cuda(), \
+                                                            Variable(model_points).cuda(), \
+                                                            Variable(idx).cuda()
             pred_r, pred_t, pred_c, emb = estimator(img, points, choose, idx)
             _, dis, new_points, new_target = criterion(pred_r, pred_t, pred_c, target, model_points, idx, points, opt.w, opt.refine_start)
 
@@ -251,24 +220,14 @@ def main():
             opt.batch_size = int(opt.batch_size / opt.iteration)
             optimizer = optim.Adam(refiner.parameters(), lr=opt.lr)
 
-            if opt.dataset == 'ycb':
-                dataset = PoseDataset_ycb('train', opt.num_points, True, opt.dataset_root, opt.noise_trans, opt.refine_start)
-            elif opt.dataset == 'linemod':
-                dataset = PoseDataset_linemod('train', opt.num_points, True, opt.dataset_root, opt.noise_trans, opt.refine_start)
-            elif opt.dataset == 'txonigiri':
+            if opt.dataset == 'txonigiri':
                 dataset = PoseDataset_txonigiri('train', opt.num_points, True, opt.dataset_root, opt.noise_trans, opt.refine_start)
-
             dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=opt.workers)
-            
-            if opt.dataset == 'ycb':
-                test_dataset = PoseDataset_ycb('test', opt.num_points, False, opt.dataset_root, 0.0, opt.refine_start)
-            elif opt.dataset == 'linemod':
-                test_dataset = PoseDataset_linemod('test', opt.num_points, False, opt.dataset_root, 0.0, opt.refine_start)
-            elif opt.dataset == 'txonigiri':
-                test_dataset = PoseDataset_txonigiri('test', opt.num_points, False, opt.dataset_root, 0.0, opt.refine_start)
 
+            if opt.dataset == 'txonigiri':
+                test_dataset = PoseDataset_txonigiri('test', opt.num_points, False, opt.dataset_root, 0.0, opt.refine_start)
             testdataloader = torch.utils.data.DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=opt.workers)
-            
+
             opt.sym_list = dataset.get_sym_list()
             opt.num_points_mesh = dataset.get_num_points_mesh()
 

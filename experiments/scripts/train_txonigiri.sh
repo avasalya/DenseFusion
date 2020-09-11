@@ -7,9 +7,13 @@ export PYTHONUNBUFFERED="True"
 export CUDA_VISIBLE_DEVICES=0
 
 
+# python3 ./tools/train.py --dataset txonigiri\
+  # --dataset_root ./datasets/txonigiri\
+
 python3 ./tools/train.py --dataset txonigiri\
   --dataset_root ./datasets/txonigiri\
-  
+  --resume_posenet /pose_model_33_0.012.pth\
+  --start_epoch 1
 
 # python3 ./tools/train.py --dataset txonigiri\
 #   --dataset_root ./datasets/txonigiri\

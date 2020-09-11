@@ -1,3 +1,0 @@
-2020-08-06 09:47:46,979 : Train time 00h 00m 00s, Training started
-2020-08-06 09:47:48,407 : Train time 00h 00m 01s Epoch 1 Batch 1 Frame 8 Avg_dis:0.11989798303693533
-2020-08-06 09:47:48,985 : Train time 00h 00m 02s Epoch 1 Batch 2 Frame 16 Avg_dis:0.07768954476341605
