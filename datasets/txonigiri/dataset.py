@@ -177,11 +177,11 @@ class PoseDataset(data.Dataset):
 
         target = np.dot(model_points, target_r.T)
         if self.add_noise:
-            target = np.add(target, target_t / scale + add_t)
             out_t = target_t / scale + add_t
+            target = np.add(target, out_t)
         else:
-            target = np.add(target, target_t/ scale)
             out_t = target_t / scale
+            target = np.add(target, out_t)
 
 
 
