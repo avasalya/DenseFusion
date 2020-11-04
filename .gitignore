@@ -8,12 +8,16 @@ datasets/txonigiri/__pycache__/
 lib/knn/knn_pytorch/__pycache__/
 
 datasets/txonigiri/data/
+datasets/txonigiri/dataset_config/
+datasets/txonigiri/models/
+
 trained_checkpoints/
 evaluation_result/
 
 experiments/logs/txonigiri/
 experiments/eval_result/
 
+*.mlp
 *.pth
 trained_models/
 

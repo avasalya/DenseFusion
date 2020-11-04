@@ -15,8 +15,7 @@ import time
 import random
 import numpy.ma as ma
 import copy
-import scipy.misc
-import scipy.io as scio
+import imageio
 import yaml
 import cv2
 
@@ -103,7 +102,7 @@ class PoseDataset(data.Dataset):
     # index being the index from train.txt or test.txt
     def __getitem__(self, index):
 
-        scale = 1000.0
+        scale = 1.0 #1000.0
         img = Image.open(self.list_rgb[index])
         depth = np.array(Image.open(self.list_depth[index]))
         label = np.array(Image.open(self.list_label[index]))
@@ -112,8 +111,11 @@ class PoseDataset(data.Dataset):
         # print("frame at index in train.txt", index+1, frame)
 
         meta = self.meta[obj][frame][0]
+        # print('depth shape', depth.shape)
+        # print('label shape', label.shape)
 
         mask_depth = ma.getmaskarray(ma.masked_not_equal(depth, 0))
+        # print('mask depth', mask_depth.shape)
 
         if self.mode == 'eval':
             mask_label = ma.getmaskarray(ma.masked_equal(label, np.array(255)))
@@ -159,7 +161,7 @@ class PoseDataset(data.Dataset):
         ymap_masked = self.ymap[rmin:rmax, cmin:cmax].flatten()[choose][:, np.newaxis].astype(np.float32)
         choose = np.array([choose])
 
-        cam_scale = 1.0
+        cam_scale = 1000.0 #1.0
         pt2 = depth_masked / cam_scale
         pt0 = (ymap_masked - self.cam_cx) * pt2 / self.cam_fx
         pt1 = (xmap_masked - self.cam_cy) * pt2 / self.cam_fy
@@ -190,22 +192,22 @@ class PoseDataset(data.Dataset):
 
         ## saving masked bounding bbox cropped images
         # p_img = np.transpose(img_masked, (1, 2, 0))
-        # scipy.misc.imsave('eval_result/{0}_input.png'.format(index), p_img)
+        # imageio.imwrite('experiments/eval_result/{0}_input.png'.format(index), p_img)
 
 
-        # fw = open('eval_result/{0}_cld.xyz'.format(index), 'w')
+        # fw = open('experiments/eval_result/{0}_cld.xyz'.format(index), 'w')
         # for it in cloud:
         #    fw.write('{0} {1} {2}\n'.format(it[0], it[1], it[2]))
         # fw.close()
 
 
-        # fw = open('eval_result/{0}_model.xyz'.format(index), 'w')
+        # fw = open('experiments/eval_result/{0}_model.xyz'.format(index), 'w')
         # for it in model_points:
         #    fw.write('{0} {1} {2}\n'.format(it[0], it[1], it[2]))
         # fw.close()
 
 
-        # fw = open('eval_result/{0}_tar.xyz'.format(index), 'w')
+        # fw = open('experiments/eval_result/{0}_tar.xyz'.format(index), 'w')
         # for it in target:
         #    fw.write('{0} {1} {2}\n'.format(it[0], it[1], it[2]))
         # fw.close()
@@ -222,29 +224,29 @@ class PoseDataset(data.Dataset):
         # imgc = img.copy()
         # imgt = img.copy()
         # imgm = img.copy()
-        # # scipy.misc.imsave('eval_result/{0}_rgb.png'.format(index), img)
+        # # imageio.imwrite('experiments/eval_result/{0}_rgb.png'.format(index), img)
 
         # # cloud
         # # imgpts_cloud, jac = cv2.projectPoints(cloud, target_r, target_t, cam_mat, dist)
         # imgpts_cloud, jac = cv2.projectPoints(cloud, np.eye(3), np.zeros(shape=target_t.shape), cam_mat, dist)
         # imgc = cv2.polylines(np.array(imgc), np.int32([np.squeeze(imgpts_cloud)]), True, (125, 125, 255))
-        # scipy.misc.imsave('eval_result/{0}_imgpts_cloud2.png'.format(index), imgc)
+        # imageio.imwrite('experiments/eval_result/{0}_imgpts_cloud2.png'.format(index), imgc)
         # # image_cloud = draw(imgc, imgpts_cloud, 2)
-        # # scipy.misc.imsave('eval_result/{0}_imgpts_cloud.png'.format(index), image_cloud)
+        # # imageio.imwrite('experiments/eval_result/{0}_imgpts_cloud.png'.format(index), image_cloud)
 
-        # # model (read directly in from .xyz file)
-        # imgpts_model, jac = cv2.projectPoints(model_points, target_r, target_t, cam_mat, dist)
-        # imgm = cv2.polylines(np.array(imgm), np.int32([np.squeeze(imgpts_model)]), True, (0, 124, 255))
-        # scipy.misc.imsave('eval_result/{0}_imgpts_model2.png'.format(index), imgm)
-        # # image_model = draw(imgm, imgpts_model, 2)
-        # # scipy.misc.imsave('eval_result/{0}_imgpts_model.png'.format(index), image_model)
+        # # # model (read directly in from .xyz file)
+        # # imgpts_model, jac = cv2.projectPoints(model_points, target_r, target_t, cam_mat, dist)
+        # # imgm = cv2.polylines(np.array(imgm), np.int32([np.squeeze(imgpts_model)]), True, (0, 124, 255))
+        # # imageio.imwrite('experiments/eval_result/{0}_imgpts_model2.png'.format(index), imgm)
+        # # # image_model = draw(imgm, imgpts_model, 2)
+        # # # imageio.imwrite('experiments/eval_result/{0}_imgpts_model.png'.format(index), image_model)
 
         # # target
         # imgpts_target, jac = cv2.projectPoints(target, np.eye(3), np.zeros(shape=target_t.shape), cam_mat, dist)
         # imgt = cv2.polylines(np.array(imgt), np.int32([np.squeeze(imgpts_target)]), True, (0, 124, 255))
-        # scipy.misc.imsave('eval_result/{0}_imgpts_target2.png'.format(index), imgt)
+        # imageio.imwrite('experiments/eval_result/{0}_imgpts_target2.png'.format(index), imgt)
         # # image_target = draw(imgt, imgpts_target, 2)
-        # # scipy.misc.imsave('eval_result/{0}_imgpts_target.png'.format(index), image_target)
+        # # imageio.imwrite('experiments/eval_result/{0}_imgpts_target.png'.format(index), image_target)
 
 
         return torch.from_numpy(cloud.astype(np.float32)), \
@@ -253,7 +255,6 @@ class PoseDataset(data.Dataset):
             torch.from_numpy(target.astype(np.float32)), \
             torch.from_numpy(model_points.astype(np.float32)), \
             torch.LongTensor([self.objlist.index(obj)])
-
 
 
 

@@ -31,14 +31,14 @@ parser.add_argument('--dataset', type=str, default = 'txonigiri', help='txonigir
 parser.add_argument('--dataset_root', type=str, default = '', help='dataset root dir (''txonigiri'' or ''Linemod_preprocessed'')')
 parser.add_argument('--batch_size', type=int, default = 8, help='batch size')
 parser.add_argument('--workers', type=int, default = 10, help='number of data loading workers')
-parser.add_argument('--lr', default=0.00001, help='learning rate')
+parser.add_argument('--lr', default=0.0001, help='learning rate')
 parser.add_argument('--lr_rate', default=0.3, help='learning rate decay rate')
-parser.add_argument('--w', default=0.0001, help='learning rate')
+parser.add_argument('--w', default=0.015, help='learning rate')
 parser.add_argument('--w_rate', default=0.3, help='learning rate decay rate')
-parser.add_argument('--decay_margin', default=0.015, help='margin to decay lr & w')
-parser.add_argument('--refine_margin', default=0.0113, help='margin to start the training of iterative refinement')
+parser.add_argument('--decay_margin', default=0.016, help='margin to decay lr & w')
+parser.add_argument('--refine_margin', default=0.013, help='margin to start the training of iterative refinement')
 parser.add_argument('--noise_trans', default=0.03, help='range of the random noise of translation added to the training data')
-parser.add_argument('--iteration', type=int, default = 6, help='number of refinement iterations')
+parser.add_argument('--iteration', type=int, default = 2, help='number of refinement iterations')
 parser.add_argument('--nepoch', type=int, default=500, help='max number of epochs to train')
 parser.add_argument('--resume_posenet', type=str, default = '',  help='resume PoseNet model')
 parser.add_argument('--resume_refinenet', type=str, default = '',  help='resume PoseRefineNet model')
@@ -57,7 +57,7 @@ def main():
     if opt.dataset == 'txonigiri':
         opt.num_objects = 1
         opt.num_points = 500
-        opt.repeat_epoch = 1
+        opt.repeat_epoch = 20
         opt.outf = 'trained_models/txonigiri'
         opt.log_dir = 'experiments/logs/txonigiri'
     else:
